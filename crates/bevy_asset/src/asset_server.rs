@@ -490,8 +490,8 @@ mod test {
         }
     }
 
-    struct FakeMultiLoader;
-    impl AssetLoader for FakeMultiLoader {
+    struct FakeMultipleDotLoader;
+    impl AssetLoader for FakeMultipleDotLoader {
         fn load<'a>(
             &'a self,
             _: &'a [u8],
@@ -505,8 +505,7 @@ mod test {
         }
     }
 
-    #[test]
-    fn multiple_extensions() {
+    fn setup() -> AssetServer {
         use crate::FileAssetIo;
 
         let asset_server = AssetServer {
@@ -522,25 +521,35 @@ mod test {
             }),
         };
         asset_server.add_loader::<FakePngLoader>(FakePngLoader);
-        asset_server.add_loader::<FakeMultiLoader>(FakeMultiLoader);
+        asset_server.add_loader::<FakeMultipleDotLoader>(FakeMultipleDotLoader);
+        asset_server
+    }
 
-        // things generally work
+    #[test]
+    fn extensions() {
+        let asset_server = setup();
         let t = asset_server.get_path_asset_loader("test.png");
-        assert!(t.is_ok());
-        assert!(t.unwrap().extensions()[0] == "png");
+        assert_eq!(t.unwrap().extensions()[0], "png");
+    }
 
-        // filenames with periods work
-        let t = asset_server.get_path_asset_loader("test-v1.2.3.png");
-        assert!(t.is_ok());
-        assert!(t.unwrap().extensions()[0] == "png");
-
-        // errors still work
+    #[test]
+    fn no_loader() {
+        let asset_server = setup();
         let t = asset_server.get_path_asset_loader("test.pong");
         assert!(t.is_err());
+    }
 
-        // multiple extensions work
+    #[test]
+    fn filename_with_dots() {
+        let asset_server = setup();
+        let t = asset_server.get_path_asset_loader("test-v1.2.3.png");
+        assert_eq!(t.unwrap().extensions()[0], "png");
+    }
+
+    #[test]
+    fn multiple_extensions() {
+        let asset_server = setup();
         let t = asset_server.get_path_asset_loader("test.test.png");
-        assert!(t.is_ok());
-        assert!(t.unwrap().extensions()[0] == "test.png");
+        assert_eq!(t.unwrap().extensions()[0], "test.png");
     }
 }
