@@ -132,11 +132,37 @@ impl AssetServer {
         &self,
         path: P,
     ) -> Result<Arc<Box<dyn AssetLoader>>, AssetServerError> {
-        path.as_ref()
-            .extension()
-            .and_then(|e| e.to_str())
-            .ok_or(AssetServerError::MissingAssetLoader(None))
-            .and_then(|extension| self.get_asset_loader(extension))
+        let s = path
+            .as_ref()
+            .file_name()
+            .ok_or(AssetServerError::MissingAssetLoader(None))?
+            .to_str()
+            .ok_or(AssetServerError::MissingAssetLoader(None))?;
+
+        // given the filename asset-v1.2.3.png, produce an iterator of file extensions that looks
+        // like this: 2.3.png, 3.png, png
+
+        let mut iter = s
+            .match_indices('.')
+            .map(|(i, _)| self.get_asset_loader(&s[i + 1..]));
+
+        // save the first result in case it's an error
+
+        let mut result = iter
+            .next()
+            .unwrap_or(Err(AssetServerError::MissingAssetLoader(None)));
+
+        // search for an asset loader but return the first error if we ultimately can't find one
+
+        if result.is_err() {
+            for next in iter {
+                if next.is_ok() {
+                    result = next;
+                    break;
+                }
+            }
+        }
+        result
     }
 
     pub fn get_handle_path<H: Into<HandleId>>(&self, handle: H) -> Option<AssetPath<'_>> {
@@ -443,4 +469,78 @@ impl AssetServer {
 
 pub fn free_unused_assets_system(asset_server: Res<AssetServer>) {
     asset_server.free_unused_assets();
+}
+
+mod test {
+    use super::*;
+    use bevy_utils::BoxedFuture;
+
+    struct FakePngLoader;
+    impl AssetLoader for FakePngLoader {
+        fn load<'a>(
+            &'a self,
+            _: &'a [u8],
+            _: &'a mut LoadContext,
+        ) -> BoxedFuture<'a, Result<(), anyhow::Error>> {
+            Box::pin(async move { Ok(()) })
+        }
+
+        fn extensions(&self) -> &[&str] {
+            &["png"]
+        }
+    }
+
+    struct FakeMultiLoader;
+    impl AssetLoader for FakeMultiLoader {
+        fn load<'a>(
+            &'a self,
+            _: &'a [u8],
+            _: &'a mut LoadContext,
+        ) -> BoxedFuture<'a, Result<(), anyhow::Error>> {
+            Box::pin(async move { Ok(()) })
+        }
+
+        fn extensions(&self) -> &[&str] {
+            &["test.png"]
+        }
+    }
+
+    #[test]
+    fn multiple_extensions() {
+        use crate::FileAssetIo;
+
+        let asset_server = AssetServer {
+            server: Arc::new(AssetServerInternal {
+                loaders: Default::default(),
+                extension_to_loader_index: Default::default(),
+                asset_sources: Default::default(),
+                asset_ref_counter: Default::default(),
+                handle_to_path: Default::default(),
+                asset_lifecycles: Default::default(),
+                task_pool: Default::default(),
+                asset_io: Box::new(FileAssetIo::new(&".")),
+            }),
+        };
+        asset_server.add_loader::<FakePngLoader>(FakePngLoader);
+        asset_server.add_loader::<FakeMultiLoader>(FakeMultiLoader);
+
+        // things generally work
+        let t = asset_server.get_path_asset_loader("test.png");
+        assert!(t.is_ok());
+        assert!(t.unwrap().extensions()[0] == "png");
+
+        // filenames with periods work
+        let t = asset_server.get_path_asset_loader("test-v1.2.3.png");
+        assert!(t.is_ok());
+        assert!(t.unwrap().extensions()[0] == "png");
+
+        // errors still work
+        let t = asset_server.get_path_asset_loader("test.pong");
+        assert!(t.is_err());
+
+        // multiple extensions work
+        let t = asset_server.get_path_asset_loader("test.test.png");
+        assert!(t.is_ok());
+        assert!(t.unwrap().extensions()[0] == "test.png");
+    }
 }
