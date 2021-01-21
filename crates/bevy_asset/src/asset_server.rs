@@ -543,16 +543,13 @@ mod test {
     #[test]
     fn multiple_extensions_no_loader() {
         let asset_server = setup();
-        let t = asset_server.get_path_asset_loader("test.v1.2.3.pong");
 
-        let correct_extension =
-            if let Some(AssetServerError::MissingAssetLoader(Some(ext))) = t.err() {
-                ext == "pong"
-            } else {
-                false
-            };
-
-        assert!(correct_extension);
+        assert!(
+            match asset_server.get_path_asset_loader("test.v1.2.3.pong") {
+                Err(AssetServerError::MissingAssetLoader(Some(ext))) => ext == "pong",
+                _ => false,
+            }
+        )
     }
 
     #[test]
