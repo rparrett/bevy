@@ -152,7 +152,7 @@ impl AssetServer {
             .next()
             .unwrap_or(Err(AssetServerError::MissingAssetLoader(None)));
 
-        // search for an asset loader but return the first error if we ultimately can't find one
+        // search for an asset loader but return the last error if we ultimately can't find one
 
         if result.is_err() {
             for next in iter {
