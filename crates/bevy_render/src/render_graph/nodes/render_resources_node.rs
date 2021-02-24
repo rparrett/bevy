@@ -208,17 +208,6 @@ where
         resized
     }
 
-    fn set_required_staging_buffer_size_to_max(&mut self) {
-        let mut new_size = 0;
-        for buffer_array in self.buffer_arrays.iter() {
-            if let Some(buffer_array) = buffer_array {
-                new_size += buffer_array.item_size * buffer_array.len;
-            }
-        }
-
-        self.required_staging_buffer_size = new_size;
-    }
-
     /// Update the staging buffer to provide enough space to copy data to target buffers.
     fn resize_staging_buffer(&mut self, render_resource_context: &dyn RenderResourceContext) {
         // TODO: allow staging buffer to scale down
@@ -484,9 +473,6 @@ fn render_resources_node_system<T: RenderResources>(
     }
 
     let resized = uniform_buffer_arrays.resize_buffer_arrays(render_resource_context);
-    if resized {
-        uniform_buffer_arrays.set_required_staging_buffer_size_to_max()
-    }
     uniform_buffer_arrays.resize_staging_buffer(render_resource_context);
 
     if let Some(staging_buffer) = state.uniform_buffer_arrays.staging_buffer {
@@ -697,9 +683,6 @@ fn asset_render_resources_node_system<T: RenderResources + Asset>(
     }
 
     let resized = uniform_buffer_arrays.resize_buffer_arrays(render_resource_context);
-    if resized {
-        uniform_buffer_arrays.set_required_staging_buffer_size_to_max()
-    }
     uniform_buffer_arrays.resize_staging_buffer(render_resource_context);
 
     if let Some(staging_buffer) = state.uniform_buffer_arrays.staging_buffer {
