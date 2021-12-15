@@ -7,7 +7,7 @@
 ![iOS cron CI](https://github.com/bevyengine/bevy/workflows/iOS%20cron%20CI/badge.svg)
 [![Discord](https://img.shields.io/discord/691052431525675048.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/bevy)
 
-## What is Bevy?
+## What is Bevy!
 
 Bevy is a refreshingly simple data-driven game engine built in Rust. It is free and open-source forever!
 
