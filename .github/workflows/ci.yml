@@ -236,8 +236,8 @@ jobs:
           toolchain: stable
       - name: Setup swiftshader
         run: |
-          wget https://github.com/qarmin/gtk_library_store/releases/download/3.24.0/swiftshader3.zip;
-          unzip swiftshader3.zip;
+          wget https://github.com/qarmin/gtk_library_store/releases/download/3.24.0/swiftshader2.zip;
+          unzip swiftshader2.zip;
           curr="$(pwd)/libvk_swiftshader.so";
           sed -i "s|PATH_TO_CHANGE|$curr|" vk_swiftshader_icd.json;
       - name: Build bevy
