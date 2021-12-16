@@ -1,6 +1,7 @@
 use serde::Deserialize;
 
 use crate::{app::AppExit, App};
+use bevy_window::{WindowDescriptor}
 
 /// Configuration for automated testing on CI
 #[derive(Deserialize)]
