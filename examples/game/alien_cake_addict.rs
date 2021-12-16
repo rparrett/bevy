@@ -12,6 +12,7 @@ enum GameState {
 fn main() {
     App::new()
         .insert_resource(Msaa { samples: 4 })
+	.insert_resource(WindowDescriptor { vsync: false, ..Default::default() })
         .init_resource::<Game>()
         .add_plugins(DefaultPlugins)
         .add_state(GameState::Playing)
