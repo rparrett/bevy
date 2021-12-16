@@ -30,6 +30,10 @@ pub(crate) fn setup_app(app: &mut App) -> &mut App {
     )
     .expect("error deserializing CI testing configuration file");
     app.insert_resource(config)
+        .insert_resource(WindowDescriptor {
+            vsync: false,
+            ..Default::default()
+        })
         .add_system(ci_testing_exit_after);
 
     app
