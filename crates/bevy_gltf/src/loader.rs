@@ -544,16 +544,19 @@ fn load_node(
                     AssetPath::new_ref(load_context.path(), Some(&material_label));
 
                 let bounds = primitive.bounding_box();
-                parent
-                    .spawn_bundle(PbrBundle {
-                        mesh: load_context.get_handle(mesh_asset_path),
-                        material: load_context.get_handle(material_asset_path),
-                        ..Default::default()
-                    })
-                    .insert(Aabb::from_min_max(
-                        Vec3::from_slice(&bounds.min),
-                        Vec3::from_slice(&bounds.max),
-                    ));
+                let mut mesh_entity = parent.spawn_bundle(PbrBundle {
+                    mesh: load_context.get_handle(mesh_asset_path),
+                    material: load_context.get_handle(material_asset_path),
+                    ..Default::default()
+                });
+                mesh_entity.insert(Aabb::from_min_max(
+                    Vec3::from_slice(&bounds.min),
+                    Vec3::from_slice(&bounds.max),
+                ));
+
+                if let Some(name) = mesh.name() {
+                    mesh_entity.insert(Name::new(name.to_string()));
+                }
             }
         }
 
