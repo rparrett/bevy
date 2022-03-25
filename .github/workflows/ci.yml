@@ -4,7 +4,7 @@ on:
   pull_request:
   push:
     branches-ignore:
-      - 'dependabot/**'
+      - "dependabot/**"
       - staging-squash-merge.tmp
 
 env:
@@ -201,49 +201,49 @@ jobs:
     needs: markdownlint
     if: always()
     steps:
-    - uses: actions/checkout@v3
-    - name: check dead links
-      continue-on-error: true
-      id: run1
-      uses: gaurav-nelson/github-action-markdown-link-check@9710f0fec812ce0a3b98bef4c9d842fc1f39d976
-      with:
-        use-quiet-mode: 'yes'
-        use-verbose-mode: 'yes'
-        config-file: '.github/linters/markdown-link-check.json'
-    - name: Sleep for 30 seconds
-      if: steps.run1.outcome=='failure'
-      run: sleep 30s
-      shell: bash
-    - name: check dead links (retry)
-      continue-on-error: true
-      id: run2
-      if: steps.run1.outcome=='failure'
-      uses: gaurav-nelson/github-action-markdown-link-check@9710f0fec812ce0a3b98bef4c9d842fc1f39d976
-      with:
-        use-quiet-mode: 'yes'
-        use-verbose-mode: 'yes'
-        config-file: '.github/linters/markdown-link-check.json'
-    - name: Sleep for 30 seconds
-      if: steps.run2.outcome=='failure'
-      run: sleep 30s
-      shell: bash
-    - name: check dead links (retry 2)
-      continue-on-error: true
-      id: run3
-      if: steps.run2.outcome=='failure'
-      uses: gaurav-nelson/github-action-markdown-link-check@9710f0fec812ce0a3b98bef4c9d842fc1f39d976
-      with:
-        use-quiet-mode: 'yes'
-        use-verbose-mode: 'yes'
-        config-file: '.github/linters/markdown-link-check.json'
-    - name: set the status
-      if: always()
-      run: |
-        if ${{ steps.run1.outcome=='success' || steps.run2.outcome=='success' || steps.run3.outcome=='success' }}; then
-            echo success
-        else
-            exit 1
-        fi
+      - uses: actions/checkout@v3
+      - name: check dead links
+        continue-on-error: true
+        id: run1
+        uses: gaurav-nelson/github-action-markdown-link-check@9710f0fec812ce0a3b98bef4c9d842fc1f39d976
+        with:
+          use-quiet-mode: "yes"
+          use-verbose-mode: "yes"
+          config-file: ".github/linters/markdown-link-check.json"
+      - name: Sleep for 30 seconds
+        if: steps.run1.outcome=='failure'
+        run: sleep 30s
+        shell: bash
+      - name: check dead links (retry)
+        continue-on-error: true
+        id: run2
+        if: steps.run1.outcome=='failure'
+        uses: gaurav-nelson/github-action-markdown-link-check@9710f0fec812ce0a3b98bef4c9d842fc1f39d976
+        with:
+          use-quiet-mode: "yes"
+          use-verbose-mode: "yes"
+          config-file: ".github/linters/markdown-link-check.json"
+      - name: Sleep for 30 seconds
+        if: steps.run2.outcome=='failure'
+        run: sleep 30s
+        shell: bash
+      - name: check dead links (retry 2)
+        continue-on-error: true
+        id: run3
+        if: steps.run2.outcome=='failure'
+        uses: gaurav-nelson/github-action-markdown-link-check@9710f0fec812ce0a3b98bef4c9d842fc1f39d976
+        with:
+          use-quiet-mode: "yes"
+          use-verbose-mode: "yes"
+          config-file: ".github/linters/markdown-link-check.json"
+      - name: set the status
+        if: always()
+        run: |
+          if ${{ steps.run1.outcome=='success' || steps.run2.outcome=='success' || steps.run3.outcome=='success' }}; then
+              echo success
+          else
+              exit 1
+          fi
 
   run-examples:
     runs-on: ubuntu-latest
@@ -274,7 +274,7 @@ jobs:
           toolchain: stable
       - name: Build bevy
         run: |
-          cargo build --no-default-features --features "bevy_dynamic_plugin,bevy_gilrs,bevy_gltf,bevy_winit,render,png,hdr,x11,bevy_ci_testing,trace,trace_chrome"
+          cargo build --no-default-features --features "bevy_dynamic_plugin,bevy_gilrs,bevy_gltf,bevy_winit,render,png,hdr,x11,bevy_ci_testing,trace,trace_chrome,bevy_audio"
       - name: Run examples
         run: |
           for example in .github/example-run/*.ron; do
@@ -317,11 +317,11 @@ jobs:
       - name: Check that examples are present in both README and Cargo
         uses: Weibye/action-internal-link-consistency@1.0.0
         with:
-          source: './examples/'
+          source: "./examples/"
           targets: '[ "./Cargo.toml", "./examples/README.md" ]'
           file-types: '[".rs"]'
           exclude-folders: '["./examples/ios"]'
-          exclude-files: '[]'
+          exclude-files: "[]"
 
   check-unused-dependencies:
     runs-on: ubuntu-latest
