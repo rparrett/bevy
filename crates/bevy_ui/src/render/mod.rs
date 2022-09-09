@@ -180,6 +180,7 @@ pub fn extract_uinodes(
     ui_stack: Extract<Res<UiStack>>,
     uinode_query: Extract<
         Query<(
+            Entity,
             &Node,
             &GlobalTransform,
             &UiColor,
@@ -190,33 +191,43 @@ pub fn extract_uinodes(
     >,
 ) {
     extracted_uinodes.uinodes.clear();
-    for (stack_index, (uinode, transform, color, image, visibility, clip)) in
-        uinode_query.iter_many(&ui_stack.uinodes).enumerate()
+
+    let mut stack_iter = ui_stack.uinodes.iter().enumerate();
+
+    for (e, uinode, transform, color, image, visibility, clip) in
+        uinode_query.iter_many(&ui_stack.uinodes)
     {
-        if !visibility.is_visible() {
-            continue;
+        if let Some((stack_index, entity)) = stack_iter.find(|(_, entity)| **entity == e) {
+            if *entity != e {
+                continue;
+            }
+
+            if !visibility.is_visible() {
+                continue;
+            }
+            let image = image.0.clone_weak();
+            // Skip loading images
+            if !images.contains(&image) {
+                continue;
+            }
+            // Skip completely transparent nodes
+            if color.0.a() == 0.0 {
+                continue;
+            }
+
+            extracted_uinodes.uinodes.push(ExtractedUiNode {
+                stack_index,
+                transform: transform.compute_matrix(),
+                color: color.0,
+                rect: Rect {
+                    min: Vec2::ZERO,
+                    max: uinode.size,
+                },
+                image,
+                atlas_size: None,
+                clip: clip.map(|clip| clip.clip),
+            });
         }
-        let image = image.0.clone_weak();
-        // Skip loading images
-        if !images.contains(&image) {
-            continue;
-        }
-        // Skip completely transparent nodes
-        if color.0.a() == 0.0 {
-            continue;
-        }
-        extracted_uinodes.uinodes.push(ExtractedUiNode {
-            stack_index,
-            transform: transform.compute_matrix(),
-            color: color.0,
-            rect: Rect {
-                min: Vec2::ZERO,
-                max: uinode.size,
-            },
-            image,
-            atlas_size: None,
-            clip: clip.map(|clip| clip.clip),
-        });
     }
 }
 
@@ -281,6 +292,7 @@ pub fn extract_text_uinodes(
     ui_stack: Extract<Res<UiStack>>,
     uinode_query: Extract<
         Query<(
+            Entity,
             &Node,
             &GlobalTransform,
             &Text,
@@ -291,53 +303,64 @@ pub fn extract_text_uinodes(
     >,
 ) {
     let scale_factor = windows.scale_factor(WindowId::primary()) as f32;
-    for (stack_index, (uinode, global_transform, text, text_layout_info, visibility, clip)) in
-        uinode_query.iter_many(&ui_stack.uinodes).enumerate()
+
+    let mut stack_iter = ui_stack.uinodes.iter().enumerate();
+
+    for (e, uinode, global_transform, text, text_layout_info, visibility, clip) in
+        uinode_query.iter_many(&ui_stack.uinodes)
     {
-        if !visibility.is_visible() {
-            continue;
-        }
-        // Skip if size is set to zero (e.g. when a parent is set to `Display::None`)
-        if uinode.size == Vec2::ZERO {
-            continue;
-        }
-        let text_glyphs = &text_layout_info.glyphs;
-        let alignment_offset = (uinode.size / -2.0).extend(0.0);
-
-        let mut color = Color::WHITE;
-        let mut current_section = usize::MAX;
-        for text_glyph in text_glyphs {
-            if text_glyph.section_index != current_section {
-                color = text.sections[text_glyph.section_index]
-                    .style
-                    .color
-                    .as_rgba_linear();
-                current_section = text_glyph.section_index;
+        if let Some((stack_index, entity)) = stack_iter.find(|(_, entity)| **entity == e) {
+            //if let Some((stack_index, entity)) = stack_iter.next() {
+            if *entity != e {
+                bevy_log::info!("{:?} != {:?}", *entity, e);
+                continue;
             }
-            let atlas = texture_atlases
-                .get(&text_glyph.atlas_info.texture_atlas)
-                .unwrap();
-            let texture = atlas.texture.clone_weak();
-            let index = text_glyph.atlas_info.glyph_index as usize;
-            let rect = atlas.textures[index];
-            let atlas_size = Some(atlas.size);
+            bevy_log::info!("{:?} == {:?}", *entity, e);
+            if !visibility.is_visible() {
+                continue;
+            }
+            // Skip if size is set to zero (e.g. when a parent is set to `Display::None`)
+            if uinode.size == Vec2::ZERO {
+                continue;
+            }
+            let text_glyphs = &text_layout_info.glyphs;
+            let alignment_offset = (uinode.size / -2.0).extend(0.0);
 
-            // NOTE: Should match `bevy_text::text2d::extract_text2d_sprite`
-            let extracted_transform = global_transform.compute_matrix()
-                * Mat4::from_scale(Vec3::splat(scale_factor.recip()))
-                * Mat4::from_translation(
-                    alignment_offset * scale_factor + text_glyph.position.extend(0.),
-                );
+            let mut color = Color::WHITE;
+            let mut current_section = usize::MAX;
+            for text_glyph in text_glyphs {
+                if text_glyph.section_index != current_section {
+                    color = text.sections[text_glyph.section_index]
+                        .style
+                        .color
+                        .as_rgba_linear();
+                    current_section = text_glyph.section_index;
+                }
+                let atlas = texture_atlases
+                    .get(&text_glyph.atlas_info.texture_atlas)
+                    .unwrap();
+                let texture = atlas.texture.clone_weak();
+                let index = text_glyph.atlas_info.glyph_index as usize;
+                let rect = atlas.textures[index];
+                let atlas_size = Some(atlas.size);
 
-            extracted_uinodes.uinodes.push(ExtractedUiNode {
-                stack_index,
-                transform: extracted_transform,
-                color,
-                rect,
-                image: texture,
-                atlas_size,
-                clip: clip.map(|clip| clip.clip),
-            });
+                // NOTE: Should match `bevy_text::text2d::extract_text2d_sprite`
+                let extracted_transform = global_transform.compute_matrix()
+                    * Mat4::from_scale(Vec3::splat(scale_factor.recip()))
+                    * Mat4::from_translation(
+                        alignment_offset * scale_factor + text_glyph.position.extend(0.),
+                    );
+
+                extracted_uinodes.uinodes.push(ExtractedUiNode {
+                    stack_index,
+                    transform: extracted_transform,
+                    color,
+                    rect,
+                    image: texture,
+                    atlas_size,
+                    clip: clip.map(|clip| clip.clip),
+                });
+            }
         }
     }
 }
