@@ -6,12 +6,13 @@ use bevy_ecs::{
     query::With,
     system::Query,
 };
-use bevy_hierarchy::{Children, Parent};
+use bevy_hierarchy::Children;
 use bevy_log::warn;
-use bevy_render::view::{ComputedVisibility, Visibility};
-use bevy_transform::prelude::{GlobalTransform, Transform};
 
-use crate::{BackgroundColor, FocusPolicy, Node, Size, Style, Val, ZIndex};
+use crate::{
+    prelude::NodeBundle, AlignItems, BackgroundColor, JustifyContent, PositionType, Size, Style,
+    Val,
+};
 
 #[derive(Component, Default, Clone, Debug)]
 pub struct LoadingBarWidget {
@@ -40,39 +41,51 @@ impl LoadingBarWidget {
     }
 }
 
-/// A UI node that is an image
 #[derive(Bundle, Clone, Debug, Default)]
 pub struct LoadingBarWidgetBundle {
-    /// Describes the size of the node
-    pub node: Node,
-    /// Describes the style including flexbox settings
-    pub style: Style,
-
+    pub node_bundle: NodeBundle,
     pub loading_bar: LoadingBarWidget,
-    /// The background color, which serves as a "fill" for this node
-    ///
-    /// When combined with `UiImage`, tints the provided image.
-    pub background_color: BackgroundColor,
-    // /// The image of the node
-    // pub image: UiImage,
-    /// Whether this node should block interaction with lower nodes
-    pub focus_policy: FocusPolicy,
-    /// The transform of the node
-    ///
-    /// This field is automatically managed by the UI layout system.
-    /// To alter the position of the `NodeBundle`, use the properties of the [`Style`] component.
-    pub transform: Transform,
-    /// The global transform of the node
-    ///
-    /// This field is automatically managed by the UI layout system.
-    /// To alter the position of the `NodeBundle`, use the properties of the [`Style`] component.
-    pub global_transform: GlobalTransform,
-    /// Describes the visibility properties of the node
-    pub visibility: Visibility,
-    /// Algorithmically-computed indication of whether an entity is visible and should be extracted for rendering
-    pub computed_visibility: ComputedVisibility,
-    /// Indicates the depth at which the node should appear in the UI
-    pub z_index: ZIndex,
+}
+
+#[derive(Bundle, Clone, Debug, Default)]
+pub struct LoadingBarWidgetInnerBundle {
+    pub node_bundle: NodeBundle,
+    pub loading_bar: LoadingBarInner,
+}
+
+impl LoadingBarWidgetBundle {
+    pub fn new(size: Size, background_color: BackgroundColor) -> Self {
+        Self {
+            node_bundle: NodeBundle {
+                background_color,
+                style: Style {
+                    size,
+                    justify_content: JustifyContent::FlexStart,
+                    align_items: AlignItems::Center,
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
+}
+
+impl LoadingBarWidgetInnerBundle {
+    pub fn new(background_color: BackgroundColor) -> Self {
+        Self {
+            node_bundle: NodeBundle {
+                background_color,
+                style: Style {
+                    size: Size::new(Val::Percent(50.0), Val::Percent(100.0)),
+                    position_type: PositionType::Absolute,
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
 }
 
 pub(crate) fn update_loading_bars(
@@ -80,13 +93,12 @@ pub(crate) fn update_loading_bars(
     mut inner: Query<&mut Style, With<LoadingBarInner>>,
 ) {
     for (widget, children) in q.iter() {
-        for child in children.iter() {
-            if let Ok(mut style) = inner.get_mut(*child) {
-                style.size = Size::new(
-                    Val::Percent(widget.get_progress() * 100.0),
-                    Val::Percent(100.0),
-                );
-            }
+        let mut styles = inner.iter_many_mut(&**children);
+        while let Some(mut style) = styles.fetch_next() {
+            style.size = Size::new(
+                Val::Percent(widget.get_progress() * 100.0),
+                Val::Percent(100.0),
+            );
         }
     }
 }

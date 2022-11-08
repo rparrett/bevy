@@ -2,7 +2,7 @@
 
 use bevy::{
     prelude::*,
-    ui::widget::{LoadingBarInner, LoadingBarWidget},
+    ui::widget::{LoadingBarInner, LoadingBarWidget, LoadingBarWidgetInnerBundle},
 };
 
 fn main() {
@@ -43,34 +43,15 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             ..default()
         })
         .with_children(|root| {
-            root.spawn(LoadingBarWidgetBundle {
-                style: Style {
-                    size: Size::new(Val::Percent(50.0), Val::Px(50.0)),
-                    justify_content: JustifyContent::FlexStart,
-                    align_items: AlignItems::Center,
-                    ..default()
-                },
-                background_color: Color::rgba(29.0 / 255.0, 31.0 / 255.0, 33.0 / 255.0, 1.0).into(),
-                ..default()
-            })
+            root.spawn(LoadingBarWidgetBundle::new(
+                Size::new(Val::Percent(50.0), Val::Px(50.0)),
+                Color::rgba_u8(29, 31, 33, 255).into(),
+            ))
             .with_children(|outer| {
-                outer
-                    .spawn(NodeBundle {
-                        style: Style {
-                            size: Size::new(Val::Percent(50.0), Val::Percent(100.0)),
-                            position_type: PositionType::Absolute,
-                            ..default()
-                        },
-                        background_color: Color::rgba(
-                            50.0 / 255.0,
-                            104.0 / 255.0,
-                            159.0 / 255.0,
-                            1.0,
-                        )
-                        .into(),
-                        ..default()
-                    })
-                    .insert(LoadingBarInner);
+                outer.spawn(LoadingBarWidgetInnerBundle::new(
+                    Color::rgba_u8(50, 104, 159, 255).into(),
+                ));
+
                 outer.spawn(TextBundle {
                     text: Text::from_section(
                         "Loading Bar",
