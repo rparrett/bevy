@@ -3,12 +3,14 @@ use bevy_asset::{Assets, Handle};
 use bevy_math::Vec2;
 use bevy_render::texture::Image;
 use bevy_sprite::TextureAtlas;
+use bevy_utils::tracing::warn;
 use glyph_brush_layout::{
     FontId, GlyphPositioner, Layout, SectionGeometry, SectionGlyph, SectionText, ToSectionText,
 };
 
 use crate::{
-    error::TextError, Font, FontAtlasSet, GlyphAtlasInfo, TextAlignment, YAxisOrientation,
+    error::TextError, Font, FontAtlasSet, GlyphAtlasInfo, TextAlignment, TextLimits,
+    YAxisOrientation,
 };
 
 pub struct GlyphBrush {
@@ -55,6 +57,7 @@ impl GlyphBrush {
         texture_atlases: &mut Assets<TextureAtlas>,
         textures: &mut Assets<Image>,
         y_axis_orientation: YAxisOrientation,
+        font_limits: &mut TextLimits,
     ) -> Result<Vec<PositionedGlyph>, TextError> {
         if glyphs.is_empty() {
             return Ok(Vec::new());
@@ -114,6 +117,13 @@ impl GlyphBrush {
                     .unwrap_or_else(|| {
                         font_atlas_set.add_glyph_to_atlas(texture_atlases, textures, outlined_glyph)
                     })?;
+
+                if let Some(max) = font_limits.max_font_sizes {
+                    if font_atlas_set.num_font_sizes() > max && !font_limits.warned {
+                        warn!("warning[B0005]: Number of font atlases has exceeded the maximum of {}. Performance and memory usage may suffer.", max);
+                        font_limits.warned = true;
+                    }
+                }
 
                 let texture_atlas = texture_atlases.get(&atlas_info.texture_atlas).unwrap();
                 let glyph_rect = texture_atlas.textures[atlas_info.glyph_index];

@@ -11,7 +11,7 @@ use glyph_brush_layout::{FontId, SectionText};
 
 use crate::{
     error::TextError, glyph_brush::GlyphBrush, scale_value, Font, FontAtlasSet, PositionedGlyph,
-    TextAlignment, TextSection, YAxisOrientation,
+    TextAlignment, TextLimits, TextSection, YAxisOrientation,
 };
 
 #[derive(Default, Resource)]
@@ -50,6 +50,7 @@ impl TextPipeline {
         texture_atlases: &mut Assets<TextureAtlas>,
         textures: &mut Assets<Image>,
         y_axis_orientation: YAxisOrientation,
+        text_limits: &mut TextLimits,
     ) -> Result<TextLayoutInfo, TextError> {
         let mut scaled_fonts = Vec::new();
         let sections = sections
@@ -105,6 +106,7 @@ impl TextPipeline {
             texture_atlases,
             textures,
             y_axis_orientation,
+            text_limits,
         )?;
 
         Ok(TextLayoutInfo { glyphs, size })

@@ -22,7 +22,7 @@ use bevy_utils::HashSet;
 use bevy_window::{WindowId, WindowScaleFactorChanged, Windows};
 
 use crate::{
-    Font, FontAtlasSet, HorizontalAlign, Text, TextError, TextLayoutInfo, TextPipeline,
+    Font, FontAtlasSet, HorizontalAlign, Text, TextError, TextLayoutInfo, TextLimits, TextPipeline,
     VerticalAlign, YAxisOrientation,
 };
 
@@ -170,6 +170,7 @@ pub fn update_text2d_layout(
         &mut Text2dSize,
         Option<&mut TextLayoutInfo>,
     )>,
+    mut text_limits: ResMut<TextLimits>,
 ) {
     // We need to consume the entire iterator, hence `last`
     let factor_changed = scale_factor_changed.iter().last().is_some();
@@ -197,6 +198,7 @@ pub fn update_text2d_layout(
                 &mut texture_atlases,
                 &mut textures,
                 YAxisOrientation::BottomToTop,
+                &mut text_limits,
             ) {
                 Err(TextError::NoSuchFont) => {
                     // There was an error processing the text layout, let's add this entity to the

@@ -127,4 +127,8 @@ impl FontAtlasSet {
                     })
             })
     }
+
+    pub fn num_font_sizes(&self) -> usize {
+        self.font_atlases.len()
+    }
 }

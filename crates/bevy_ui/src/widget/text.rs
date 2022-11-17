@@ -9,7 +9,7 @@ use bevy_math::Vec2;
 use bevy_render::texture::Image;
 use bevy_sprite::TextureAtlas;
 use bevy_text::{
-    Font, FontAtlasSet, Text, TextError, TextLayoutInfo, TextPipeline, YAxisOrientation,
+    Font, FontAtlasSet, Text, TextError, TextLayoutInfo, TextLimits, TextPipeline, YAxisOrientation,
 };
 use bevy_window::Windows;
 
@@ -65,6 +65,7 @@ pub fn text_system(
             Option<&mut TextLayoutInfo>,
         )>,
     )>,
+    mut text_limits: ResMut<TextLimits>,
 ) {
     // TODO: This should support window-independent scale settings.
     // See https://github.com/bevyengine/bevy/issues/5621
@@ -124,6 +125,7 @@ pub fn text_system(
                 &mut texture_atlases,
                 &mut textures,
                 YAxisOrientation::TopToBottom,
+                &mut text_limits,
             ) {
                 Err(TextError::NoSuchFont) => {
                     // There was an error processing the text layout, let's add this entity to the
