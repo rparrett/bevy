@@ -8,8 +8,7 @@ use glyph_brush_layout::{
 };
 
 use crate::{
-    error::TextError, Font, FontAtlasSet, GlyphAtlasInfo, TextAlignment, TextSettings,
-    YAxisOrientation,
+    error::TextError, Font, FontAtlasSet, GlyphAtlasInfo, TextAlignment, YAxisOrientation,
 };
 
 pub struct GlyphBrush {
@@ -55,7 +54,6 @@ impl GlyphBrush {
         fonts: &Assets<Font>,
         texture_atlases: &mut Assets<TextureAtlas>,
         textures: &mut Assets<Image>,
-        text_settings: &TextSettings,
         y_axis_orientation: YAxisOrientation,
     ) -> Result<Vec<PositionedGlyph>, TextError> {
         if glyphs.is_empty() {
@@ -114,12 +112,7 @@ impl GlyphBrush {
                     .get_glyph_atlas_info(section_data.2, glyph_id, glyph_position)
                     .map(Ok)
                     .unwrap_or_else(|| {
-                        font_atlas_set.add_glyph_to_atlas(
-                            texture_atlases,
-                            textures,
-                            outlined_glyph,
-                            text_settings,
-                        )
+                        font_atlas_set.add_glyph_to_atlas(texture_atlases, textures, outlined_glyph)
                     })?;
 
                 let texture_atlas = texture_atlases.get(&atlas_info.texture_atlas).unwrap();
