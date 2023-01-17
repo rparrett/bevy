@@ -75,14 +75,14 @@ struct Game {
 const BOARD_SIZE_I: usize = 14;
 const BOARD_SIZE_J: usize = 21;
 
-const RESET_FOCUS: [f32; 3] = [
+const RESET_FOCUS: Vec3 = Vec3::new(
     BOARD_SIZE_I as f32 / 2.0,
     0.0,
     BOARD_SIZE_J as f32 / 2.0 - 0.5,
-];
+);
 
 fn setup_cameras(mut commands: Commands, mut game: ResMut<Game>) {
-    game.camera_should_focus = Vec3::from(RESET_FOCUS);
+    game.camera_should_focus = RESET_FOCUS;
     game.camera_is_focus = game.camera_should_focus;
     commands.spawn(Camera3dBundle {
         transform: Transform::from_xyz(
@@ -275,7 +275,7 @@ fn focus_camera(
         }
         // otherwise, target the middle
     } else {
-        game.camera_should_focus = Vec3::from(RESET_FOCUS);
+        game.camera_should_focus = RESET_FOCUS;
     }
     // calculate the camera motion based on the difference between where the camera is looking
     // and where it should be looking; the greater the distance, the faster the motion;
