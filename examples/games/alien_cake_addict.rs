@@ -73,8 +73,8 @@ struct Game {
 
 #[derive(Resource, Default)]
 struct CameraFocus {
-    camera_should_focus: Vec3,
-    camera_is_focus: Vec3,
+    target: Vec3,
+    current: Vec3,
 }
 
 const BOARD_SIZE_I: usize = 14;
@@ -87,15 +87,15 @@ const RESET_FOCUS: Vec3 = Vec3::new(
 );
 
 fn setup_cameras(mut commands: Commands, mut camera_focus: ResMut<CameraFocus>) {
-    camera_focus.camera_should_focus = RESET_FOCUS;
-    camera_focus.camera_is_focus = camera_focus.camera_should_focus;
+    camera_focus.target = RESET_FOCUS;
+    camera_focus.current = camera_focus.target;
     commands.spawn(Camera3dBundle {
         transform: Transform::from_xyz(
             -(BOARD_SIZE_I as f32 / 2.0),
             2.0 * BOARD_SIZE_J as f32 / 3.0,
             BOARD_SIZE_J as f32 / 2.0 - 0.5,
         )
-        .looking_at(camera_focus.camera_is_focus, Vec3::Y),
+        .looking_at(camera_focus.current, Vec3::Y),
         ..default()
     });
 }
@@ -270,31 +270,31 @@ fn focus_camera(
             transform_query.get(player_entity),
             transform_query.get(bonus_entity),
         ) {
-            camera_focus.camera_should_focus = player_transform
+            camera_focus.target = player_transform
                 .translation
                 .lerp(bonus_transform.translation, 0.5);
         }
         // otherwise, if there is only a player, target the player
     } else if let Some(player_entity) = game.player.entity {
         if let Ok(player_transform) = transforms.p1().get(player_entity) {
-            camera_focus.camera_should_focus = player_transform.translation;
+            camera_focus.target = player_transform.translation;
         }
         // otherwise, target the middle
     } else {
-        camera_focus.camera_should_focus = RESET_FOCUS;
+        camera_focus.target = RESET_FOCUS;
     }
     // calculate the camera motion based on the difference between where the camera is looking
     // and where it should be looking; the greater the distance, the faster the motion;
     // smooth out the camera movement using the frame time
-    let mut camera_motion = camera_focus.camera_should_focus - camera_focus.camera_is_focus;
+    let mut camera_motion = camera_focus.target - camera_focus.current;
     if camera_motion.length() > 0.2 {
         camera_motion *= SPEED * time.delta_seconds();
         // set the new camera's actual focus
-        camera_focus.camera_is_focus += camera_motion;
+        camera_focus.current += camera_motion;
     }
     // look at that new camera's actual focus
     for mut transform in transforms.p0().iter_mut() {
-        *transform = transform.looking_at(camera_focus.camera_is_focus, Vec3::Y);
+        *transform = transform.looking_at(camera_focus.current, Vec3::Y);
     }
 }
 
