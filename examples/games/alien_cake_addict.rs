@@ -289,10 +289,10 @@ fn focus_camera(
     let mut camera_motion = camera_focus.target - camera_focus.current;
     if camera_motion.length() > 0.2 {
         camera_motion *= SPEED * time.delta_seconds();
-        // set the new camera's actual focus
+        // set the camera's new "actual" focus
         camera_focus.current += camera_motion;
     }
-    // look at that new camera's actual focus
+    // point the camera at that new focus
     for mut transform in transforms.p0().iter_mut() {
         *transform = transform.looking_at(camera_focus.current, Vec3::Y);
     }
