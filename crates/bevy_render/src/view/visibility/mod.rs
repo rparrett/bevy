@@ -1,6 +1,7 @@
 mod render_layers;
 
 use bevy_derive::Deref;
+use bevy_tasks::ComputeTaskPool;
 pub use render_layers::*;
 
 use bevy_app::{Plugin, PostUpdate};
@@ -407,72 +408,77 @@ pub fn check_visibility(
     for (mut visible_entities, frustum, maybe_view_mask) in &mut view_query {
         let view_mask = maybe_view_mask.copied().unwrap_or_default();
 
-        visible_entities.entities.clear();
-        visible_aabb_query.par_iter_mut().for_each(|query_item| {
-            let (
-                entity,
-                inherited_visibility,
-                mut view_visibility,
-                maybe_entity_mask,
-                model_aabb,
-                transform,
-                no_frustum_culling,
-            ) = query_item;
+        ComputeTaskPool::get().scope(|scope| {
+            scope.spawn(async {
+                visible_entities.entities.clear();
+                visible_aabb_query.par_iter_mut().for_each(
+                    |(
+                        entity,
+                        inherited_visibility,
+                        mut view_visibility,
+                        maybe_entity_mask,
+                        model_aabb,
+                        transform,
+                        no_frustum_culling,
+                    )| {
+                        // Skip computing visibility for entities that are configured to be hidden.
+                        // ViewVisibility has already been reset in `reset_view_visibility`.
+                        if !inherited_visibility.get() {
+                            return;
+                        }
 
-            // Skip computing visibility for entities that are configured to be hidden.
-            // ViewVisibility has already been reset in `reset_view_visibility`.
-            if !inherited_visibility.get() {
-                return;
-            }
+                        let entity_mask = maybe_entity_mask.copied().unwrap_or_default();
+                        if !view_mask.intersects(&entity_mask) {
+                            return;
+                        }
 
-            let entity_mask = maybe_entity_mask.copied().unwrap_or_default();
-            if !view_mask.intersects(&entity_mask) {
-                return;
-            }
+                        // If we have an aabb and transform, do frustum culling
+                        if !no_frustum_culling {
+                            let model = transform.affine();
+                            let model_sphere = Sphere {
+                                center: model.transform_point3a(model_aabb.center),
+                                radius: transform.radius_vec3a(model_aabb.half_extents),
+                            };
+                            // Do quick sphere-based frustum culling
+                            if !frustum.intersects_sphere(&model_sphere, false) {
+                                return;
+                            }
+                            // If we have an aabb, do aabb-based frustum culling
+                            if !frustum.intersects_obb(model_aabb, &model, true, false) {
+                                return;
+                            }
+                        }
 
-            // If we have an aabb and transform, do frustum culling
-            if !no_frustum_culling {
-                let model = transform.affine();
-                let model_sphere = Sphere {
-                    center: model.transform_point3a(model_aabb.center),
-                    radius: transform.radius_vec3a(model_aabb.half_extents),
-                };
-                // Do quick sphere-based frustum culling
-                if !frustum.intersects_sphere(&model_sphere, false) {
+                        view_visibility.set();
+                        let cell = thread_queues.get_or_default();
+                        let mut queue = cell.take();
+                        queue.push(entity);
+                        cell.set(queue);
+                    },
+                );
+            });
+
+            visible_no_aabb_query.par_iter_mut().for_each(|query_item| {
+                let (entity, inherited_visibility, mut view_visibility, maybe_entity_mask) =
+                    query_item;
+
+                // Skip computing visibility for entities that are configured to be hidden.
+                // `ViewVisibility` has already been reset in `reset_view_visibility`.
+                if !inherited_visibility.get() {
                     return;
                 }
-                // If we have an aabb, do aabb-based frustum culling
-                if !frustum.intersects_obb(model_aabb, &model, true, false) {
+
+                let entity_mask = maybe_entity_mask.copied().unwrap_or_default();
+                if !view_mask.intersects(&entity_mask) {
                     return;
                 }
-            }
 
-            view_visibility.set();
-            let cell = thread_queues.get_or_default();
-            let mut queue = cell.take();
-            queue.push(entity);
-            cell.set(queue);
-        });
-
-        visible_no_aabb_query.par_iter_mut().for_each(|query_item| {
-            let (entity, inherited_visibility, mut view_visibility, maybe_entity_mask) = query_item;
-
-            // Skip computing visibility for entities that are configured to be hidden.
-            // `ViewVisibility` has already been reset in `reset_view_visibility`.
-            if !inherited_visibility.get() {
-                return;
-            }
-
-            let entity_mask = maybe_entity_mask.copied().unwrap_or_default();
-            if !view_mask.intersects(&entity_mask) {
-                return;
-            }
-
-            view_visibility.set();
-            let cell = thread_queues.get_or_default();
-            let mut queue = cell.take();
-            queue.push(entity);
-            cell.set(queue);
+                view_visibility.set();
+                let cell = thread_queues.get_or_default();
+                let mut queue = cell.take();
+                queue.push(entity);
+                cell.set(queue);
+            });
         });
 
         for cell in &mut thread_queues {
