@@ -7,13 +7,12 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
-                resolution: WindowResolution::new(500., 300.).with_scale_factor_override(1.0),
+                resolution: WindowResolution::new(500., 300.),
                 ..default()
             }),
             ..default()
         }))
         .add_startup_system(setup)
-        .add_system(display_override)
         .add_system(toggle_override)
         .add_system(change_scale_factor)
         .run();
@@ -61,16 +60,6 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     );
                 });
         });
-}
-
-/// Set the title of the window to the current override
-fn display_override(mut windows: Query<&mut Window>) {
-    let mut window = windows.single_mut();
-
-    window.title = format!(
-        "Scale override: {:?}",
-        window.resolution.scale_factor_override()
-    );
 }
 
 /// This system toggles scale factor overrides when enter is pressed
