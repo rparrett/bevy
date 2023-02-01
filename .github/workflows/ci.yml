@@ -1,6 +1,6 @@
 name: CI
 
-default:
+defaults:
   timeout-minutes: 1
 
 on:
