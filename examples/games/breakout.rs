@@ -28,6 +28,7 @@ const RIGHT_WALL: f32 = 450.;
 const BOTTOM_WALL: f32 = -300.;
 const TOP_WALL: f32 = 300.;
 
+// You can use negative values here to flip the bricks
 const BRICK_SIZE: Vec2 = Vec2::new(100., 30.);
 // These values are exact
 const GAP_BETWEEN_PADDLE_AND_BRICKS: f32 = 270.0;
@@ -257,8 +258,12 @@ fn setup(
     assert!(total_height_of_bricks > 0.0);
 
     // Given the space available, compute how many rows and columns of bricks we can fit
-    let n_columns = (total_width_of_bricks / (BRICK_SIZE.x + GAP_BETWEEN_BRICKS)).floor() as usize;
-    let n_rows = (total_height_of_bricks / (BRICK_SIZE.y + GAP_BETWEEN_BRICKS)).floor() as usize;
+    let abs_brick_size = BRICK_SIZE.abs();
+    let n_columns =
+        (total_width_of_bricks / (abs_brick_size.x + GAP_BETWEEN_BRICKS)).floor() as usize;
+    let n_rows =
+        (total_height_of_bricks / (abs_brick_size.y + GAP_BETWEEN_BRICKS)).floor() as usize;
+
     let n_vertical_gaps = n_columns - 1;
 
     // Because we need to round the number of columns,
@@ -266,20 +271,20 @@ fn setup(
     let center_of_bricks = (LEFT_WALL + RIGHT_WALL) / 2.0;
     let left_edge_of_bricks = center_of_bricks
         // Space taken up by the bricks
-        - (n_columns as f32 / 2.0 * BRICK_SIZE.x)
+        - (n_columns as f32 / 2.0 * abs_brick_size.x)
         // Space taken up by the gaps
         - n_vertical_gaps as f32 / 2.0 * GAP_BETWEEN_BRICKS;
 
     // In Bevy, the `translation` of an entity describes the center point,
     // not its bottom-left corner
-    let offset_x = left_edge_of_bricks + BRICK_SIZE.x / 2.;
-    let offset_y = bottom_edge_of_bricks + BRICK_SIZE.y / 2.;
+    let offset_x = left_edge_of_bricks + abs_brick_size.x / 2.;
+    let offset_y = bottom_edge_of_bricks + abs_brick_size.y / 2.;
 
     for row in 0..n_rows {
         for column in 0..n_columns {
             let brick_position = Vec2::new(
-                offset_x + column as f32 * (BRICK_SIZE.x + GAP_BETWEEN_BRICKS),
-                offset_y + row as f32 * (BRICK_SIZE.y + GAP_BETWEEN_BRICKS),
+                offset_x + column as f32 * (abs_brick_size.x + GAP_BETWEEN_BRICKS),
+                offset_y + row as f32 * (abs_brick_size.y + GAP_BETWEEN_BRICKS),
             );
 
             // brick
