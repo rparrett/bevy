@@ -18,6 +18,7 @@ use bevy::{
     pbr::{NotShadowCaster, NotShadowReceiver},
     prelude::*,
 };
+use bevy_internal::animation::RepeatAnimation;
 
 fn main() {
     App::new()
@@ -31,6 +32,8 @@ fn main() {
 }
 
 fn setup_camera_fog(mut commands: Commands) {
+    let _repeat = RepeatAnimation::default();
+
     commands.spawn((
         Camera3dBundle::default(),
         FogSettings {
