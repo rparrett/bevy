@@ -5,15 +5,22 @@ use bevy_ecs::prelude::*;
 use bevy_time::Time;
 
 /// Adds "frame time" diagnostic to an App, specifically "frame time", "fps" and "frame count"
-#[derive(Default)]
-pub struct FrameTimeDiagnosticsPlugin;
+pub struct FrameTimeDiagnosticsPlugin {
+    // Number of frame times to keep for averaging
+    history_length: usize,
+}
+impl Default for FrameTimeDiagnosticsPlugin {
+    fn default() -> Self {
+        Self { history_length: 60 }
+    }
+}
 
 impl Plugin for FrameTimeDiagnosticsPlugin {
     fn build(&self, app: &mut bevy_app::App) {
         app.register_diagnostic(
-            Diagnostic::new(Self::FRAME_TIME, "frame_time", 20).with_suffix("ms"),
+            Diagnostic::new(Self::FRAME_TIME, "frame_time", self.history_length).with_suffix("ms"),
         )
-        .register_diagnostic(Diagnostic::new(Self::FPS, "fps", 20))
+        .register_diagnostic(Diagnostic::new(Self::FPS, "fps", self.history_length))
         .register_diagnostic(
             Diagnostic::new(Self::FRAME_COUNT, "frame_count", 1).with_smoothing_factor(0.0),
         )
