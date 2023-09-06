@@ -101,7 +101,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, args: Res<Args>
     let border = if args.no_borders {
         UiRect::ZERO
     } else {
-        UiRect::all(Val::VMin(0.05 * 90. / buttons_f))
+        UiRect::all(Val::Px(2.))
     };
 
     let as_rainbow = |i: usize| Color::hsl((i as f32 / buttons_f) * 360.0, 0.9, 0.8);
@@ -109,38 +109,37 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, args: Res<Args>
     commands
         .spawn(NodeBundle {
             style: Style {
-                flex_direction: FlexDirection::Column,
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center,
                 width: Val::Percent(100.),
+                height: Val::Percent(100.),
+                display: Display::Grid,
+                row_gap: Val::Px(2.0),
+                column_gap: Val::Px(2.0),
+                grid_template_columns: RepeatedGridTrack::flex(args.buttons as u16, 1.),
+                grid_template_rows: RepeatedGridTrack::flex(args.buttons as u16, 1.),
+                padding: UiRect::all(Val::Px(10.0)),
                 ..default()
             },
             ..default()
         })
         .with_children(|commands| {
             for column in 0..args.buttons {
-                commands
-                    .spawn(NodeBundle::default())
-                    .with_children(|commands| {
-                        for row in 0..args.buttons {
-                            let color = as_rainbow(row % column.max(1)).into();
-                            let border_color = Color::WHITE.with_a(0.5).into();
-                            spawn_button(
-                                commands,
-                                color,
-                                buttons_f,
-                                column,
-                                row,
-                                !args.no_text,
-                                border,
-                                border_color,
-                                image
-                                    .as_ref()
-                                    .filter(|_| (column + row) % args.image_freq == 0)
-                                    .cloned(),
-                            );
-                        }
-                    });
+                for row in 0..args.buttons {
+                    let color = as_rainbow(row % column.max(1)).into();
+                    let border_color = Color::WHITE.with_a(0.5).into();
+                    spawn_button(
+                        commands,
+                        color,
+                        column,
+                        row,
+                        !args.no_text,
+                        border,
+                        border_color,
+                        image
+                            .as_ref()
+                            .filter(|_| (column + row) % args.image_freq == 0)
+                            .cloned(),
+                    );
+                }
             }
         });
 }
@@ -149,7 +148,6 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, args: Res<Args>
 fn spawn_button(
     commands: &mut ChildBuilder,
     background_color: BackgroundColor,
-    buttons: f32,
     column: usize,
     row: usize,
     spawn_text: bool,
@@ -157,15 +155,11 @@ fn spawn_button(
     border_color: BorderColor,
     image: Option<Handle<Image>>,
 ) {
-    let width = Val::Vw(90.0 / buttons);
-    let height = Val::Vh(90.0 / buttons);
-    let margin = UiRect::axes(width * 0.05, height * 0.05);
     let mut builder = commands.spawn((
         ButtonBundle {
             style: Style {
-                width,
-                height,
-                margin,
+                width: Val::Percent(100.),
+                height: Val::Percent(100.),
                 align_items: AlignItems::Center,
                 justify_content: JustifyContent::Center,
                 border,
