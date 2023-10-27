@@ -23,9 +23,9 @@ const STICKS_Y: f32 = -135.;
 
 const NORMAL_BUTTON_COLOR: Color = Color::rgb(0.2, 0.2, 0.2);
 const ACTIVE_BUTTON_COLOR: Color = Color::PURPLE;
-const LIVE_COLOR: Color = Color::rgb(0.4, 0.4, 0.4);
+const LIVE_COLOR: Color = Color::rgb(0.5, 0.5, 0.5);
 const DEAD_COLOR: Color = Color::rgb(0.3, 0.3, 0.3);
-const EXTENT_COLOR: Color = Color::rgb(0.2, 0.2, 0.2);
+const EXTENT_COLOR: Color = Color::rgb(0.3, 0.3, 0.3);
 const TEXT_COLOR: Color = Color::WHITE;
 
 #[derive(Component, Deref)]
@@ -289,7 +289,7 @@ fn setup_sticks(
                 // full extent
                 parent.spawn(SpriteBundle {
                     sprite: Sprite {
-                        custom_size: Some(Vec2::splat(STICK_BOUNDS_SIZE * 2.1)),
+                        custom_size: Some(Vec2::splat(STICK_BOUNDS_SIZE * 2.)),
                         color: EXTENT_COLOR,
                         ..default()
                     },
