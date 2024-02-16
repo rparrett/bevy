@@ -74,12 +74,12 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         color: Color::WHITE,
     };
     let box_size = Vec2::new(300.0, 200.0);
-    let box_position = Vec2::new(0.0, -250.0);
+    let box_position = Vec2::new(-200., -240.0);
     commands
         .spawn(SpriteBundle {
             sprite: Sprite {
                 color: Color::rgb(0.25, 0.25, 0.75),
-                custom_size: Some(Vec2::new(box_size.x, box_size.y)),
+                custom_size: Some(box_size),
                 ..default()
             },
             transform: Transform::from_translation(box_position.extend(0.0)),
@@ -89,7 +89,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             builder.spawn(Text2dBundle {
                 text: Text {
                     sections: vec![TextSection::new(
-                        "this text wraps in the box\n(Unicode linebreaks)",
+                        "This text wraps in the box.\n(Unicode linebreaks)",
                         slightly_smaller_text_style.clone(),
                     )],
                     justify: JustifyText::Left,
@@ -105,13 +105,12 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             });
         });
 
-    let other_box_size = Vec2::new(300.0, 200.0);
-    let other_box_position = Vec2::new(320.0, -250.0);
+    let other_box_position = box_position * Vec2::new(-1., 1.);
     commands
         .spawn(SpriteBundle {
             sprite: Sprite {
                 color: Color::rgb(0.20, 0.3, 0.70),
-                custom_size: Some(Vec2::new(other_box_size.x, other_box_size.y)),
+                custom_size: Some(box_size),
                 ..default()
             },
             transform: Transform::from_translation(other_box_position.extend(0.0)),
@@ -121,7 +120,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             builder.spawn(Text2dBundle {
                 text: Text {
                     sections: vec![TextSection::new(
-                        "this text wraps in the box\n(AnyCharacter linebreaks)",
+                        "This text wraps in the box.\n(AnyCharacter linebreaks)",
                         slightly_smaller_text_style.clone(),
                     )],
                     justify: JustifyText::Left,
@@ -129,7 +128,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 },
                 text_2d_bounds: Text2dBounds {
                     // Wrap text in the rectangle
-                    size: other_box_size,
+                    size: box_size,
                 },
                 // ensure the text is drawn on top of the box
                 transform: Transform::from_translation(Vec3::Z),
@@ -137,11 +136,12 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             });
         });
 
-    for (text_anchor, color) in [
-        (Anchor::TopLeft, Color::RED),
-        (Anchor::TopRight, Color::GREEN),
-        (Anchor::BottomRight, Color::BLUE),
-        (Anchor::BottomLeft, Color::YELLOW),
+    for (text_anchor, color, size) in [
+        (Anchor::TopLeft, Color::RED, 42.),
+        (Anchor::TopRight, Color::GREEN, 42.),
+        (Anchor::BottomRight, Color::TURQUOISE, 42.),
+        (Anchor::BottomLeft, Color::YELLOW, 42.),
+        (Anchor::Center, Color::WHITE, 16.),
     ] {
         commands.spawn(Text2dBundle {
             text: Text {
@@ -149,6 +149,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     format!(" Anchor::{text_anchor:?} "),
                     TextStyle {
                         color,
+                        font_size: size,
                         ..slightly_smaller_text_style.clone()
                     },
                 )],
@@ -166,8 +167,8 @@ fn animate_translation(
     mut query: Query<&mut Transform, (With<Text>, With<AnimateTranslation>)>,
 ) {
     for mut transform in &mut query {
-        transform.translation.x = 100.0 * time.elapsed_seconds().sin() - 400.0;
-        transform.translation.y = 100.0 * time.elapsed_seconds().cos();
+        transform.translation.x = -80.0 * time.elapsed_seconds().sin() - 400.0;
+        transform.translation.y = 80.0 * time.elapsed_seconds().cos();
     }
 }
 
@@ -176,7 +177,7 @@ fn animate_rotation(
     mut query: Query<&mut Transform, (With<Text>, With<AnimateRotation>)>,
 ) {
     for mut transform in &mut query {
-        transform.rotation = Quat::from_rotation_z(time.elapsed_seconds().cos());
+        transform.rotation = Quat::from_rotation_z(time.elapsed_seconds().cos() * 0.8);
     }
 }
 
@@ -189,7 +190,7 @@ fn animate_scale(
     for mut transform in &mut query {
         transform.translation = Vec3::new(400.0, 0.0, 0.0);
 
-        let scale = (time.elapsed_seconds().sin() + 1.1) * 2.0;
+        let scale = (time.elapsed_seconds().sin() + 1.1) * 1.6;
         transform.scale.x = scale;
         transform.scale.y = scale;
     }
