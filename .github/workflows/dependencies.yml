@@ -14,6 +14,8 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  DENY_OUT_BASE: "/tmp/deny-bans-base"
+  DENY_OUT_PR: "/tmp/deny-bans-pr"
 
 jobs:
   check-advisories:
@@ -40,21 +42,18 @@ jobs:
       - name: Check for banned and duplicated dependencies (base)
         run: |
           set -o history
-          OUT_FILE=/tmp/deny-bans-base
-          cargo deny --format json check bans 2>&1 | jq -r -n '[inputs][] | select(.fields.severity != null) | "\(.fields.severity) \(.fields.message)"' | sort > $OUT_FILE
+          cargo deny --format json check bans 2>&1 | jq -r -n '[inputs][] | select(.fields.severity != null) | "\(.fields.severity) \(.fields.message)"' | sort > $DENY_OUT_BASE
       - uses: actions/checkout@v4
       - name: Cargo update (PR)
         run: cargo update
       - name: Check for banned and duplicated dependencies (PR)
         run: |
-          #!/bin/bash
-          OUT_FILE=/tmp/deny-bans-pr
           set -o pipefail
-          cargo deny --format json check bans 2>&1 | jq -r -n '[inputs][] | select(.fields.severity != null) | "\(.fields.severity) \(.fields.message)"' | sort > $OUT_FILE && fail=0 || fail=1
+          cargo deny --format json check bans 2>&1 | jq -r -n '[inputs][] | select(.fields.severity != null) | "\(.fields.severity) \(.fields.message)"' | sort > $DENY_OUT_PR && fail=0 || fail=1
           set +o pipefail
           if [[ $fail = "1" ]]; then
             # show the diff with the entire output. if there's no diff, display the output.
-            diff -U99999 /tmp/deny-bans-pr /tmp/deny-bans-base && cat /tmp/deny-bans-pr
+            diff -U99999 $DENY_OUT_PR $DENY_OUT_BASE && cat $DENY_OUT_PR
             exit 1
           fi
 
