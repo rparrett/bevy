@@ -41,7 +41,6 @@ jobs:
         run: cargo update
       - name: Check for banned and duplicated dependencies (base)
         run: |
-          set -o history
           cargo deny --format json check bans 2>&1 | jq -r -n '[inputs][] | select(.fields.severity != null) | "\(.fields.severity) \(.fields.message)"' | sort > $DENY_OUT_BASE
       - uses: actions/checkout@v4
       - name: Cargo update (PR)
