@@ -69,11 +69,13 @@ mod color;
 pub mod color_difference;
 mod color_ops;
 mod color_range;
+pub mod consts;
 mod hsla;
 mod lcha;
 mod linear_rgba;
 mod oklaba;
 mod srgba;
+
 #[cfg(test)]
 mod test_colors;
 #[cfg(test)]

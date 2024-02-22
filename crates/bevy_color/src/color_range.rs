@@ -26,13 +26,13 @@ mod tests {
 
     #[test]
     fn test_color_range() {
-        let range = Srgba::RED..Srgba::BLUE;
-        assert_eq!(range.at(0.0), Srgba::RED);
+        let range = crate::consts::RED..crate::consts::BLUE;
+        assert_eq!(range.at(0.0), crate::consts::RED);
         assert_eq!(range.at(0.5), Srgba::new(0.5, 0.0, 0.5, 1.0));
-        assert_eq!(range.at(1.0), Srgba::BLUE);
+        assert_eq!(range.at(1.0), crate::consts::BLUE);
 
-        let lred: LinearRgba = Srgba::RED.into();
-        let lblue: LinearRgba = Srgba::BLUE.into();
+        let lred: LinearRgba = crate::consts::RED.into();
+        let lblue: LinearRgba = crate::consts::BLUE.into();
 
         let range = lred..lblue;
         assert_eq!(range.at(0.0), lred);

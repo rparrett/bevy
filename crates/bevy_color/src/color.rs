@@ -33,7 +33,7 @@ impl Color {
 
 impl Default for Color {
     fn default() -> Self {
-        Self::Srgba(Srgba::WHITE)
+        Self::Srgba(crate::consts::WHITE)
     }
 }
 
