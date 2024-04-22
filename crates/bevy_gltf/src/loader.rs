@@ -1,4 +1,5 @@
 use crate::{vertex_attributes::convert_attribute, Gltf, GltfExtras, GltfNode};
+#[cfg(feature = "bevy_animation")]
 use bevy_animation::{AnimationTarget, AnimationTargetId};
 use bevy_asset::{
     io::Reader, AssetLoadError, AssetLoader, AsyncReadExt, Handle, LoadContext, ReadAssetBytesError,
@@ -44,7 +45,8 @@ use gltf::{
     Material, Node, Primitive, Semantic,
 };
 use serde::{Deserialize, Serialize};
-use smallvec::{smallvec, SmallVec};
+#[cfg(feature = "bevy_animation")]
+use smallvec::SmallVec;
 use std::io::Error;
 use std::{
     collections::VecDeque,
@@ -476,18 +478,10 @@ async fn load_gltf<'a, 'b, 'c>(
             if mesh.attribute(Mesh::ATTRIBUTE_NORMAL).is_none()
                 && matches!(mesh.primitive_topology(), PrimitiveTopology::TriangleList)
             {
-                let vertex_count_before = mesh.count_vertices();
-                mesh.duplicate_vertices();
+                bevy_utils::tracing::debug!(
+                    "Automatically calculating missing vertex normals for geometry."
+                );
                 mesh.compute_flat_normals();
-                let vertex_count_after = mesh.count_vertices();
-
-                if vertex_count_before != vertex_count_after {
-                    bevy_utils::tracing::debug!("Missing vertex normals in indexed geometry, computing them as flat. Vertex count increased from {} to {}", vertex_count_before, vertex_count_after);
-                } else {
-                    bevy_utils::tracing::debug!(
-                        "Missing vertex normals in indexed geometry, computing them as flat."
-                    );
-                }
             }
 
             if let Some(vertex_attribute) = reader
@@ -1040,7 +1034,7 @@ fn load_node(
         // This is an animation root. Make a new animation context.
         animation_context = Some(AnimationContext {
             root: node.id(),
-            path: smallvec![],
+            path: SmallVec::new(),
         });
     }
 
