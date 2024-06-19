@@ -106,9 +106,7 @@ impl TextPipeline {
             .map(|attrs_owned| attrs_owned.as_attrs())
             .collect::<Vec<_>>();
 
-        let strs = filtered_sections
-            .map(|(_, section)| &section.value[..])
-            .collect::<Vec<_>>();
+        let strs = filtered_sections.map(|(_, section)| &section.value[..]);
 
         let spans = zip(strs, attrs);
 
