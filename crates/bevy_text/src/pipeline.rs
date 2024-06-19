@@ -101,10 +101,7 @@ impl TextPipeline {
             })
             .collect::<Vec<_>>();
 
-        let attrs = attrs_owned
-            .iter()
-            .map(|attrs_owned| attrs_owned.as_attrs())
-            .collect::<Vec<_>>();
+        let attrs = attrs_owned.iter().map(|attrs_owned| attrs_owned.as_attrs());
 
         let strs = filtered_sections.map(|(_, section)| &section.value[..]);
 
