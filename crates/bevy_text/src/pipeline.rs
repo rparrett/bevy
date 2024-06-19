@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{iter::zip, sync::Arc};
 
 use bevy_asset::{AssetId, Assets};
 use bevy_ecs::{component::Component, reflect::ReflectComponent, system::Resource};
@@ -8,7 +8,7 @@ use bevy_render::texture::Image;
 use bevy_sprite::TextureAtlasLayout;
 use bevy_utils::HashMap;
 
-use cosmic_text::{Attrs, Buffer, Metrics, Shaping, Wrap};
+use cosmic_text::{Attrs, AttrsOwned, Buffer, Family, Metrics, Shaping, Wrap};
 
 use crate::{
     error::TextError, BreakLineOn, CosmicBuffer, Font, FontAtlasSets, JustifyText, PositionedGlyph,
@@ -82,24 +82,35 @@ impl TextPipeline {
         let (font_size, line_height) = (font_size as f32, line_height as f32);
         let metrics = Metrics::new(font_size, line_height).scale(scale_factor as f32);
 
-        let spans: Vec<(&str, Attrs)> = sections
+        let filtered_sections = sections
             .iter()
-            .filter(|section| section.style.font_size > 0.0)
             .enumerate()
+            .filter(|(_, section)| section.style.font_size > 0.0);
+
+        let attrs_owned = filtered_sections
+            .clone()
             .map(|(section_index, section)| {
-                (
-                    &section.value[..],
-                    get_attrs(
-                        section,
-                        section_index,
-                        font_system,
-                        &mut self.map_handle_to_font_id,
-                        fonts,
-                        scale_factor,
-                    ),
+                get_attrs(
+                    section,
+                    section_index,
+                    font_system,
+                    &mut self.map_handle_to_font_id,
+                    fonts,
+                    scale_factor,
                 )
             })
-            .collect();
+            .collect::<Vec<_>>();
+
+        let attrs = attrs_owned
+            .iter()
+            .map(|attrs_owned| attrs_owned.as_attrs())
+            .collect::<Vec<_>>();
+
+        let strs = filtered_sections
+            .map(|(_, section)| &section.value[..])
+            .collect::<Vec<_>>();
+
+        let spans = zip(strs, attrs);
 
         buffer.set_metrics(font_system, metrics);
         buffer.set_size(font_system, Some(bounds.x.ceil()), None);
@@ -323,14 +334,14 @@ impl TextMeasureInfo {
 
 /// Translates [`TextSection`] to [`Attrs`](cosmic_text::attrs::Attrs),
 /// loading fonts into the [`Database`](cosmic_text::fontdb::Database) if required.
-fn get_attrs<'a>(
-    section: &'a TextSection,
+fn get_attrs(
+    section: &TextSection,
     section_index: usize,
     font_system: &mut cosmic_text::FontSystem,
     map_handle_to_font_id: &mut HashMap<AssetId<Font>, cosmic_text::fontdb::ID>,
     fonts: &Assets<Font>,
     scale_factor: f64,
-) -> Attrs<'a> {
+) -> AttrsOwned {
     let font_handle = section.style.font.clone();
     let face_id = map_handle_to_font_id
         .entry(font_handle.id())
@@ -353,18 +364,17 @@ fn get_attrs<'a>(
             //     .or_insert_with(|| font.as_swash().metrics(&[]));
         });
     let face = font_system.db().face(*face_id).unwrap();
-    // TODO: validate this is the correct string to extract
-    // let family_name = &face.families[0].0;
+    // The English family name
+    let family_name = &face.families[0].0;
     let attrs = Attrs::new()
         .metadata(section_index)
-        // TODO: this reference, becomes owned by the font system, which is not really wanted...
-        // .family(Family::Name(family_name))
+        .family(Family::Name(family_name))
         .stretch(face.stretch)
         .style(face.style)
         .weight(face.weight)
         .metrics(Metrics::relative(section.style.font_size, 1.2).scale(scale_factor as f32))
         .color(cosmic_text::Color(section.style.color.to_linear().as_u32()));
-    attrs
+    AttrsOwned::new(attrs)
 }
 
 /// Calculate the size of the text area for the given buffer.
