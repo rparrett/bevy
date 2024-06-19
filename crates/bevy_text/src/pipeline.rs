@@ -91,13 +91,11 @@ impl TextPipeline {
         let spans: Vec<(&str, Attrs)> = sections
             .iter()
             .filter(|section| section.style.font_size > 0.0)
-            .enumerate()
-            .map(|(section_index, section)| {
+            .map(|section| {
                 (
                     &section.value[..],
                     get_attrs(
                         section,
-                        section_index,
                         font_system,
                         &self.map_handle_to_font_id,
                         scale_factor,
@@ -364,7 +362,6 @@ fn load_font_to_fontdb(
 /// loading fonts into the [`Database`](cosmic_text::fontdb::Database) if required.
 fn get_attrs<'a>(
     section: &TextSection,
-    section_index: usize,
     font_system: &mut cosmic_text::FontSystem,
     map_handle_to_font_id: &'a HashMap<AssetId<Font>, (cosmic_text::fontdb::ID, String)>,
     scale_factor: f64,
@@ -376,7 +373,6 @@ fn get_attrs<'a>(
 
     // TODO: validate this is the correct string to extract
     let attrs = Attrs::new()
-        .metadata(section_index)
         .family(Family::Name(family_name))
         .stretch(face.stretch)
         .style(face.style)
