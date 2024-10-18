@@ -37,6 +37,8 @@ type ExtractFn = Box<dyn Fn(&mut World, &mut World) + Send>;
 ///
 /// // Create a sub-app with the same resource and a single schedule.
 /// let mut sub_app = SubApp::new();
+/// sub_app.update_schedule = Some(Main.intern());
+///
 /// sub_app.insert_resource(Val(100));
 ///
 /// // Setup an extract function to copy the resource's value in the main world.
@@ -45,9 +47,12 @@ type ExtractFn = Box<dyn Fn(&mut World, &mut World) + Send>;
 /// });
 ///
 /// // Schedule a system that will verify extraction is working.
-/// sub_app.add_systems(Main, |counter: Res<Val>| {
+/// sub_app.add_systems(Main, |mut counter: ResMut<Val>| {
 ///     // The value will be copied during extraction, so we should see 10 instead of 100.
 ///     assert_eq!(counter.0, 10);
+///
+///     // We'll increment the counter so we can check to see that the system ran.
+///     counter.0 += 1;
 /// });
 ///
 /// // Add the sub-app to the main app.
@@ -55,6 +60,9 @@ type ExtractFn = Box<dyn Fn(&mut World, &mut World) + Send>;
 ///
 /// // Update the application once (using the default runner).
 /// app.run();
+///
+/// // Check that the subapp systems ran
+/// assert_eq!(app.sub_app_mut(ExampleApp).world().resource::<Val>().0, 11);
 /// ```
 pub struct SubApp {
     /// The data of this application.
