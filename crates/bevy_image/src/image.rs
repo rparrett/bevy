@@ -803,6 +803,34 @@ impl Image {
         );
     }
 
+    /// Expands the image to the new size, keeping the shape of the image in tact, and filling
+    /// the new space with `0`.
+    ///
+    /// Panics if `new_size` is smaller than the current size, or if this is not a 2d image.
+    pub fn grow_in_place_2d(&mut self, new_size: Extent3d) {
+        assert!(self.texture_descriptor.size.depth_or_array_layers == 1);
+        assert!(new_size.width >= self.texture_descriptor.size.width);
+        assert!(new_size.height >= self.texture_descriptor.size.height);
+
+        let old_size = self.texture_descriptor.size;
+        let pixel_size = self.texture_descriptor.format.pixel_size();
+
+        let mut new = vec![0; new_size.width as usize * new_size.height as usize * pixel_size];
+
+        for row in 0..old_size.height {
+            let old_row_start = (row * old_size.width) as usize * pixel_size;
+            let old_row_end = old_row_start + old_size.width as usize * pixel_size;
+
+            let new_row_start = (row * new_size.width) as usize * pixel_size;
+            let new_row_end = new_row_start + old_size.width as usize * pixel_size;
+
+            new[new_row_start..new_row_end].copy_from_slice(&self.data[old_row_start..old_row_end]);
+        }
+
+        self.data = new;
+        self.texture_descriptor.size = new_size;
+    }
+
     /// Changes the `size`, asserting that the total number of data elements (pixels) remains the
     /// same.
     ///

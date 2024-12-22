@@ -15,6 +15,11 @@ use bevy_utils::HashMap;
 
 use crate::{error::TextError, Font, FontAtlas, FontSmoothing, GlyphAtlasInfo};
 
+// TODO, configurable, and can we prevent users from settings max > limits on
+// the current platform?
+const MIN_ATLAS_SIZE: u32 = 512;
+const MAX_ATLAS_SIZE: u32 = 2048;
+
 /// A map of font faces to their corresponding [`FontAtlasSet`]s.
 #[derive(Debug, Default, Resource)]
 pub struct FontAtlasSets {
@@ -113,18 +118,11 @@ impl FontAtlasSet {
             .iter_mut()
             .any(|atlas| add_char_to_font_atlas(atlas).is_ok())
         {
-            // Find the largest dimension of the glyph, either its width or its height
-            let glyph_max_size: u32 = glyph_texture
-                .texture_descriptor
-                .size
-                .height
-                .max(glyph_texture.width());
-            // Pick the higher of 512 or the smallest power of 2 greater than glyph_max_size
-            let containing = (1u32 << (32 - glyph_max_size.leading_zeros())).max(512);
             self.font_atlases.push(FontAtlas::new(
                 textures,
                 texture_atlases,
-                UVec2::splat(containing),
+                UVec2::splat(MIN_ATLAS_SIZE),
+                UVec2::splat(MAX_ATLAS_SIZE),
                 font_smoothing,
             ));
 

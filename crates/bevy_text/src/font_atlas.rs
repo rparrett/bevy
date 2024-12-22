@@ -39,6 +39,7 @@ impl FontAtlas {
         textures: &mut Assets<Image>,
         texture_atlases_layout: &mut Assets<TextureAtlasLayout>,
         size: UVec2,
+        max_size: UVec2,
         font_smoothing: FontSmoothing,
     ) -> FontAtlas {
         let mut image = Image::new_fill(
@@ -61,7 +62,7 @@ impl FontAtlas {
         Self {
             texture_atlas,
             glyph_to_atlas_index: HashMap::default(),
-            dynamic_texture_atlas_builder: DynamicTextureAtlasBuilder::new(size, 1),
+            dynamic_texture_atlas_builder: DynamicTextureAtlasBuilder::new(size, max_size, 1),
             texture,
         }
     }

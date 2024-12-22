@@ -47,13 +47,15 @@ fn atlas_render_system(
                 return;
             }
 
+            info!("A new atlas was created");
+
             state.atlas_count += 1;
             commands.spawn((
                 ImageNode::new(font_atlas.texture.clone()),
                 Node {
                     position_type: PositionType::Absolute,
                     top: Val::ZERO,
-                    left: Val::Px(512.0 * x_offset),
+                    left: Val::Px(768.0 * x_offset),
                     ..default()
                 },
             ));

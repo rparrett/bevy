@@ -3,6 +3,7 @@ use bevy_image::{Image, TextureFormatPixelInfo};
 use bevy_math::{URect, UVec2};
 use bevy_render::{
     render_asset::{RenderAsset, RenderAssetUsages},
+    render_resource::Extent3d,
     texture::GpuImage,
 };
 use guillotiere::{size2, Allocation, AtlasAllocator};
@@ -14,6 +15,7 @@ use guillotiere::{size2, Allocation, AtlasAllocator};
 pub struct DynamicTextureAtlasBuilder {
     atlas_allocator: AtlasAllocator,
     padding: u32,
+    max_size: UVec2,
 }
 
 impl DynamicTextureAtlasBuilder {
@@ -23,10 +25,11 @@ impl DynamicTextureAtlasBuilder {
     ///
     /// * `size` - total size for the atlas
     /// * `padding` - gap added between textures in the atlas, both in x axis and y axis
-    pub fn new(size: UVec2, padding: u32) -> Self {
+    pub fn new(size: UVec2, max_size: UVec2, padding: u32) -> Self {
         Self {
             atlas_allocator: AtlasAllocator::new(to_size2(size)),
             padding,
+            max_size,
         }
     }
 
@@ -47,10 +50,32 @@ impl DynamicTextureAtlasBuilder {
         texture: &Image,
         atlas_texture: &mut Image,
     ) -> Option<usize> {
-        let allocation = self.atlas_allocator.allocate(size2(
+        let mut allocation = self.atlas_allocator.allocate(size2(
             (texture.width() + self.padding).try_into().unwrap(),
             (texture.height() + self.padding).try_into().unwrap(),
         ));
+
+        if allocation.is_none() {
+            let uv = to_uvec2(self.atlas_allocator.size());
+            if uv.x < self.max_size.x && uv.y < self.max_size.y {
+                let next_x = (uv.x + 1).next_power_of_two().min(self.max_size.x);
+                let next_y = (uv.y + 1).next_power_of_two().min(self.max_size.y);
+                let new = UVec2::new(next_x, next_y);
+
+                self.atlas_allocator.grow(to_size2(new));
+                atlas_texture.grow_in_place_2d(Extent3d {
+                    width: new.x,
+                    height: new.y,
+                    depth_or_array_layers: 1,
+                });
+
+                allocation = self.atlas_allocator.allocate(size2(
+                    (texture.width() + self.padding).try_into().unwrap(),
+                    (texture.height() + self.padding).try_into().unwrap(),
+                ));
+            }
+        }
+
         if let Some(allocation) = allocation {
             assert!(
                 <GpuImage as RenderAsset>::asset_usage(atlas_texture)
@@ -106,4 +131,8 @@ fn to_rect(rectangle: guillotiere::Rectangle) -> URect {
 
 fn to_size2(vec2: UVec2) -> guillotiere::Size {
     guillotiere::Size::new(vec2.x as i32, vec2.y as i32)
+}
+
+fn to_uvec2(size: guillotiere::Size) -> UVec2 {
+    UVec2::new(size.width as u32, size.height as u32)
 }
