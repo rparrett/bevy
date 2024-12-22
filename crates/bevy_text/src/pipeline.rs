@@ -289,7 +289,7 @@ impl TextPipeline {
                 let physical_glyph = layout_glyph.physical((0., 0.), 1.);
 
                 let atlas_info = font_atlas_set
-                    .get_glyph_atlas_info(physical_glyph.cache_key, font_smoothing)
+                    .get_glyph_atlas_info(physical_glyph.cache_key)
                     .map(Ok)
                     .unwrap_or_else(|| {
                         font_atlas_set.add_glyph_to_atlas(

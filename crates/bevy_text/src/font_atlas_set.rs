@@ -69,32 +69,22 @@ pub struct FontAtlasKey(pub u32, pub FontSmoothing);
 /// A `FontAtlasSet` contains one or more [`FontAtlas`]es for each font size.
 ///
 /// It is used by [`TextPipeline::queue_text`](crate::TextPipeline::queue_text).
-#[derive(Debug, TypePath, Asset)]
+#[derive(Debug, TypePath, Asset, Default)]
 pub struct FontAtlasSet {
-    font_atlases: HashMap<FontAtlasKey, Vec<FontAtlas>>,
-}
-
-impl Default for FontAtlasSet {
-    fn default() -> Self {
-        FontAtlasSet {
-            font_atlases: HashMap::with_capacity_and_hasher(1, Default::default()),
-        }
-    }
+    font_atlases: Vec<FontAtlas>,
 }
 
 impl FontAtlasSet {
     /// Returns an iterator over the [`FontAtlas`]es in this set
-    pub fn iter(&self) -> impl Iterator<Item = (&FontAtlasKey, &Vec<FontAtlas>)> {
+    pub fn iter(&self) -> impl Iterator<Item = &FontAtlas> {
         self.font_atlases.iter()
     }
 
     /// Checks if the given subpixel-offset glyph is contained in any of the [`FontAtlas`]es in this set
-    pub fn has_glyph(&self, cache_key: cosmic_text::CacheKey, font_size: &FontAtlasKey) -> bool {
+    pub fn has_glyph(&self, cache_key: cosmic_text::CacheKey) -> bool {
         self.font_atlases
-            .get(font_size)
-            .map_or(false, |font_atlas| {
-                font_atlas.iter().any(|atlas| atlas.has_glyph(cache_key))
-            })
+            .iter()
+            .any(|atlas| atlas.has_glyph(cache_key))
     }
 
     /// Adds the given subpixel-offset glyph to the [`FontAtlas`]es in this set
@@ -108,21 +98,6 @@ impl FontAtlasSet {
         font_smoothing: FontSmoothing,
     ) -> Result<GlyphAtlasInfo, TextError> {
         let physical_glyph = layout_glyph.physical((0., 0.), 1.0);
-
-        let font_atlases = self
-            .font_atlases
-            .entry(FontAtlasKey(
-                physical_glyph.cache_key.font_size_bits,
-                font_smoothing,
-            ))
-            .or_insert_with(|| {
-                vec![FontAtlas::new(
-                    textures,
-                    texture_atlases,
-                    UVec2::splat(512),
-                    font_smoothing,
-                )]
-            });
 
         let (glyph_texture, offset) = Self::get_outlined_glyph_texture(
             font_system,
@@ -139,7 +114,8 @@ impl FontAtlasSet {
                 offset,
             )
         };
-        if !font_atlases
+        if !self
+            .font_atlases
             .iter_mut()
             .any(|atlas| add_char_to_font_atlas(atlas).is_ok())
         {
@@ -151,14 +127,14 @@ impl FontAtlasSet {
                 .max(glyph_texture.width());
             // Pick the higher of 512 or the smallest power of 2 greater than glyph_max_size
             let containing = (1u32 << (32 - glyph_max_size.leading_zeros())).max(512);
-            font_atlases.push(FontAtlas::new(
+            self.font_atlases.push(FontAtlas::new(
                 textures,
                 texture_atlases,
                 UVec2::splat(containing),
                 font_smoothing,
             ));
 
-            font_atlases.last_mut().unwrap().add_glyph(
+            self.font_atlases.last_mut().unwrap().add_glyph(
                 textures,
                 texture_atlases,
                 physical_glyph.cache_key,
@@ -167,36 +143,29 @@ impl FontAtlasSet {
             )?;
         }
 
-        Ok(self
-            .get_glyph_atlas_info(physical_glyph.cache_key, font_smoothing)
-            .unwrap())
+        Ok(self.get_glyph_atlas_info(physical_glyph.cache_key).unwrap())
     }
 
     /// Generates the [`GlyphAtlasInfo`] for the given subpixel-offset glyph.
     pub fn get_glyph_atlas_info(
         &mut self,
         cache_key: cosmic_text::CacheKey,
-        font_smoothing: FontSmoothing,
     ) -> Option<GlyphAtlasInfo> {
         self.font_atlases
-            .get(&FontAtlasKey(cache_key.font_size_bits, font_smoothing))
-            .and_then(|font_atlases| {
-                font_atlases
-                    .iter()
-                    .find_map(|atlas| {
-                        atlas.get_glyph_index(cache_key).map(|location| {
-                            (
-                                location,
-                                atlas.texture_atlas.clone_weak(),
-                                atlas.texture.clone_weak(),
-                            )
-                        })
-                    })
-                    .map(|(location, texture_atlas, texture)| GlyphAtlasInfo {
-                        texture_atlas,
+            .iter()
+            .find_map(|atlas| {
+                atlas.get_glyph_index(cache_key).map(|location| {
+                    (
                         location,
-                        texture,
-                    })
+                        atlas.texture_atlas.clone_weak(),
+                        atlas.texture.clone_weak(),
+                    )
+                })
+            })
+            .map(|(location, texture_atlas, texture)| GlyphAtlasInfo {
+                texture_atlas,
+                location,
+                texture,
             })
     }
 

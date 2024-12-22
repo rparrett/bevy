@@ -41,12 +41,12 @@ fn atlas_render_system(
     font_atlas_sets: Res<FontAtlasSets>,
 ) {
     if let Some(set) = font_atlas_sets.get(&state.handle) {
-        if let Some((_size, font_atlas)) = set.iter().next() {
+        if let Some(font_atlas) = set.iter().nth(state.atlas_count as usize) {
             let x_offset = state.atlas_count as f32;
-            if state.atlas_count == font_atlas.len() as u32 {
+            if state.atlas_count == set.len() as u32 {
                 return;
             }
-            let font_atlas = &font_atlas[state.atlas_count as usize];
+
             state.atlas_count += 1;
             commands.spawn((
                 ImageNode::new(font_atlas.texture.clone()),
@@ -97,13 +97,23 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, mut state: ResM
             parent.spawn((
                 Text::new("a"),
                 TextFont {
-                    font: font_handle,
+                    font: font_handle.clone(),
                     font_size: 50.0,
                     ..default()
                 },
                 TextColor(YELLOW.into()),
             ));
+            parent.spawn((
+                Text::new("a"),
+                TextFont {
+                    font: font_handle,
+                    font_size: 12.0,
+                    ..default()
+                },
+                TextColor(YELLOW.into()),
+            ));
         });
+
     // We're seeding the PRNG here to make this example deterministic for testing purposes.
     // This isn't strictly required in practical use unless you need your app to be deterministic.
     commands.insert_resource(SeededRng(ChaCha8Rng::seed_from_u64(19878367467713)));
