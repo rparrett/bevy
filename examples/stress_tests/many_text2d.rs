@@ -6,7 +6,7 @@ use bevy::{
     diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
     prelude::*,
     render::view::NoFrustumCulling,
-    text::FontAtlasSets,
+    text::{FontAtlasSet, FontAtlasSets},
     window::{PresentMode, WindowResolution},
 };
 
@@ -174,10 +174,7 @@ fn print_counts(
         return;
     }
 
-    let num_atlases = atlases
-        .get(font.0.id())
-        .map(|set| set.iter().map(|atlas| atlas.1.len()).sum())
-        .unwrap_or(0);
+    let num_atlases = atlases.get(font.0.id()).map(FontAtlasSet::len).unwrap_or(0);
 
     let visible_texts = texts.iter().filter(|visibility| visibility.get()).count();
 
