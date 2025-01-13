@@ -1,4 +1,6 @@
 //! Create a custom material to draw basic lines in 3D
+//!
+//! Note: This example uses `PolygonMode::Line` which is not supported on WebGL 2
 
 use bevy::{
     pbr::{MaterialPipeline, MaterialPipelineKey},
