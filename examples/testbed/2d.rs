@@ -141,21 +141,96 @@ mod bloom {
 }
 
 mod text {
+    use bevy::color::palettes;
     use bevy::prelude::*;
+    use bevy::sprite::Anchor;
+    use bevy::text::TextBounds;
+
+    fn example(
+        commands: &mut Commands,
+        dest: Vec3,
+        justify: JustifyText,
+        bounds: Option<TextBounds>,
+    ) {
+        commands.spawn((
+            Sprite {
+                color: palettes::css::YELLOW.into(),
+                custom_size: Some(5. * Vec2::ONE),
+                ..Default::default()
+            },
+            Transform::from_translation(dest),
+        ));
+
+        for anchor in [
+            Anchor::TopLeft,
+            Anchor::TopRight,
+            Anchor::BottomRight,
+            Anchor::BottomLeft,
+        ] {
+            let mut text = commands.spawn((
+                Text2d::new("L R\n"),
+                TextLayout::new_with_justify(justify.clone()),
+                Transform::from_translation(dest + Vec3::Z),
+                anchor.clone(),
+                StateScoped(super::Scene::Text),
+            ));
+            text.with_children(|parent| {
+                parent.spawn((
+                    TextSpan::new(format!("{anchor:?}\n")),
+                    TextFont {
+                        font_size: 14.0,
+                        ..default()
+                    },
+                    TextColor(palettes::tailwind::BLUE_400.into()),
+                ));
+                parent.spawn((
+                    TextSpan::new(format!("{justify:?}")),
+                    TextFont {
+                        font_size: 14.0,
+                        ..default()
+                    },
+                    TextColor(palettes::tailwind::GREEN_400.into()),
+                ));
+            });
+
+            if let Some(bounds) = bounds {
+                text.insert(bounds);
+
+                commands.spawn((
+                    Sprite {
+                        color: palettes::tailwind::GRAY_900.into(),
+                        custom_size: Some(Vec2::new(bounds.width.unwrap(), bounds.height.unwrap())),
+                        anchor: anchor.clone(),
+                        ..Default::default()
+                    },
+                    Transform::from_translation(dest - Vec3::Z),
+                    StateScoped(super::Scene::Text),
+                ));
+            }
+        }
+    }
 
     pub fn setup(mut commands: Commands) {
-        let text_font = TextFont {
-            font_size: 50.0,
-            ..default()
-        };
-        let text_justification = JustifyText::Center;
-        commands.spawn((Camera2d, StateScoped(super::Scene::Text)));
-        commands.spawn((
-            Text2d::new("Hello World"),
-            text_font,
-            TextLayout::new_with_justify(text_justification),
-            StateScoped(super::Scene::Text),
-        ));
+        commands.spawn((Camera2d::default(), StateScoped(super::Scene::Text)));
+
+        for (i, justify) in [
+            JustifyText::Left,
+            JustifyText::Right,
+            JustifyText::Center,
+            JustifyText::Justified,
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let y = 230. - 150. * i as f32;
+            example(&mut commands, -300. * Vec3::X + y * Vec3::Y, justify, None);
+            example(
+                &mut commands,
+                300. * Vec3::X + y * Vec3::Y,
+                justify,
+                Some(TextBounds::new(150., 55.)),
+            );
+        }
     }
 }
 
