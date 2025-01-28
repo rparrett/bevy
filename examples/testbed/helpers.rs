@@ -5,14 +5,19 @@ use bevy::{
     platform_support::collections::HashSet,
     prelude::*,
     render::view::screenshot::Captured,
+    state::state::FreelyMutableState,
 };
 
+pub trait TestbedScene {
+    fn next(&self) -> Self;
+}
+
 #[cfg(feature = "bevy_ci_testing")]
-pub fn switch_scene_in_ci<Scene: States>(
+pub fn switch_scene_in_ci<Scene: States + FreelyMutableState + TestbedScene>(
     mut ci_config: ResMut<CiTestingConfig>,
     scene: Res<State<Scene>>,
+    mut next_scene: ResMut<NextState<Scene>>,
     mut scenes_visited: Local<HashSet<Scene>>,
-    mut keyboard: ResMut<ButtonInput<KeyCode>>,
     frame_count: Res<FrameCount>,
     captured: RemovedComponents<Captured>,
 ) {
@@ -22,19 +27,20 @@ pub fn switch_scene_in_ci<Scene: States>(
             frame_count.0 + 100,
             CiTestingEvent::NamedScreenshot(format!("{:?}", scene.get())),
         ));
-        keyboard.release(KeyCode::Space);
+
         if scenes_visited.contains(scene.get()) {
             ci_config.events.push(CiTestingEventOnFrame(
                 frame_count.0 + 1,
                 CiTestingEvent::AppExit,
             ));
         }
+
         return;
     }
 
     if !captured.is_empty() {
         // Screenshot taken! Switch to the next scene
         scenes_visited.insert(scene.get().clone());
-        keyboard.press(KeyCode::Space);
+        next_scene.set(scene.get().next());
     }
 }

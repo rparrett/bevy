@@ -3,7 +3,8 @@
 //! You can switch scene by pressing the spacebar
 
 use bevy::prelude::*;
-#[cfg(feature = "bevy_ci_testing")]
+use helpers::TestbedScene;
+
 mod helpers;
 
 fn main() {
@@ -34,6 +35,16 @@ enum Scene {
     Gltf,
     Animation,
 }
+impl TestbedScene for Scene {
+    fn next(&self) -> Self {
+        match self {
+            Scene::Light => Scene::Bloom,
+            Scene::Bloom => Scene::Gltf,
+            Scene::Gltf => Scene::Animation,
+            Scene::Animation => Scene::Light,
+        }
+    }
+}
 
 fn switch_scene(
     keyboard: Res<ButtonInput<KeyCode>>,
@@ -42,12 +53,7 @@ fn switch_scene(
 ) {
     if keyboard.just_pressed(KeyCode::Space) {
         info!("Switching scene");
-        next_scene.set(match scene.get() {
-            Scene::Light => Scene::Bloom,
-            Scene::Bloom => Scene::Gltf,
-            Scene::Gltf => Scene::Animation,
-            Scene::Animation => Scene::Light,
-        });
+        next_scene.set(scene.get().next());
     }
 }
 
