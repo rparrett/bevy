@@ -1009,6 +1009,7 @@ mod tests {
     use approx::{assert_abs_diff_eq, AbsDiffEq};
     use core::f32::consts::TAU;
     use glam::*;
+    use std::println;
 
     #[test]
     fn curve_can_be_made_into_an_object() {
@@ -1074,6 +1075,7 @@ mod tests {
         ]
         .into_iter()
         .for_each(|(t, x)| {
+            println!("{t} {x} {}", curve.sample_unchecked(t));
             assert!(curve.sample_unchecked(t).abs_diff_eq(x, f32::EPSILON));
         });
     }
