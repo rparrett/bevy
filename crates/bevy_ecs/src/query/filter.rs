@@ -888,9 +888,9 @@ unsafe impl<T: Component> QueryFilter for Added<T> {
 ///
 /// # Time complexity
 ///
-/// `Changed` is not [`ArchetypeFilter`], which practically means that
-/// if query (with `T` component filter) matches million entities,
-/// `Changed<T>` filter will iterate over all of them even if none of them were changed.
+/// `Changed` does not implement [`ArchetypeFilter`], which means that if a query with a `T`
+/// component filter matches many entities, the `Changed<T>` filter will still iterate over
+/// all of them, even if none were changed.
 ///
 /// For example, these two systems are roughly equivalent in terms of performance:
 ///
@@ -1113,8 +1113,8 @@ unsafe impl<T: Component> QueryFilter for Changed<T> {
 ///
 /// # Time complexity
 ///
-/// `Spawned` is not [`ArchetypeFilter`], which practically means that if query matches million
-/// entities, `Spawned` filter will iterate over all of them even if none of them were spawned.
+/// `Spawned` does not implement [`ArchetypeFilter`], which means that if a query matches many
+/// entities, the `Spawned` filter will still iterate over all of them, even if none were spawned.
 ///
 /// For example, these two systems are roughly equivalent in terms of performance:
 ///
